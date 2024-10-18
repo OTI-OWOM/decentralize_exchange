@@ -33,3 +33,21 @@
 (define-read-only (get-liquidity-provider-balance (provider principal))
     (default-to u0
         (map-get? liquidity-providers provider)))
+
+;; Calculate token output amount for a swap
+(define-read-only (get-swap-output 
+    (amount-in uint)
+    (reserve-in uint)
+    (reserve-out uint))
+    (let
+        (
+            (amount-in-with-fee (* amount-in (- fee-denominator fee-numerator)))
+            (numerator (* amount-in-with-fee reserve-out))
+            (denominator (+ (* reserve-in fee-denominator) amount-in-with-fee))
+        )
+        (/ numerator denominator)
+    ))
+
+
+
+
