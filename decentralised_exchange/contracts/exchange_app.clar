@@ -89,3 +89,38 @@
             (+ (get-liquidity-provider-balance tx-sender) liquidity-minted))
         
         (ok liquidity-minted))))
+
+
+(define-public (remove-liquidity
+    (token-x (string-ascii 32))
+    (token-y (string-ascii 32))
+    (liquidity uint)
+    (min-amount-x uint)
+    (min-amount-y uint))
+    (begin 
+        (let (
+            (reserves (unwrap! (get-reserves token-x token-y) ERR-ZERO-LIQUIDITY))
+            (reserve-x (get reserve-x reserves))
+            (reserve-y (get reserve-y reserves))
+            (provider-liquidity (get-liquidity-provider-balance tx-sender))
+            (amount-x (/ (* liquidity reserve-x) (var-get total-liquidity)))
+            (amount-y (/ (* liquidity reserve-y) (var-get total-liquidity)))
+        )
+        
+        (asserts! (>= provider-liquidity liquidity) ERR-INSUFFICIENT-BALANCE)
+        (asserts! (>= amount-x min-amount-x) ERR-SLIPPAGE-EXCEEDED)
+        (asserts! (>= amount-y min-amount-y) ERR-SLIPPAGE-EXCEEDED)
+        
+        ;; Update reserves
+        (map-set token-reserves
+            { token-x: token-x, token-y: token-y }
+            { reserve-x: (- reserve-x amount-x),
+              reserve-y: (- reserve-y amount-y) })
+        
+        ;; Update liquidity
+        (var-set total-liquidity (- (var-get total-liquidity) liquidity))
+        (map-set liquidity-providers
+            tx-sender
+            (- provider-liquidity liquidity))
+        
+        (ok { amount-x: amount-x, amount-y: amount-y }))))
