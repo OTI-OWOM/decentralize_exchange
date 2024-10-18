@@ -23,3 +23,13 @@
 (define-map token-reserves
     { token-x: (string-ascii 32), token-y: (string-ascii 32) }
     { reserve-x: uint, reserve-y: uint })
+
+;; Read-only functions
+(define-read-only (get-reserves (token-x (string-ascii 32)) (token-y (string-ascii 32)))
+    (match (map-get? token-reserves { token-x: token-x, token-y: token-y })
+        reserve-pair (ok reserve-pair)
+        (err ERR-ZERO-LIQUIDITY)))
+
+(define-read-only (get-liquidity-provider-balance (provider principal))
+    (default-to u0
+        (map-get? liquidity-providers provider)))
