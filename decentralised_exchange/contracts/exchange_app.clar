@@ -124,3 +124,32 @@
             (- provider-liquidity liquidity))
         
         (ok { amount-x: amount-x, amount-y: amount-y }))))
+
+(define-public (swap-exact-tokens
+    (token-in (string-ascii 32))
+    (token-out (string-ascii 32))
+    (amount-in uint)
+    (min-amount-out uint)
+    (deadline uint))
+    (begin
+        (let (
+            (reserves (unwrap! (get-reserves token-in token-out) ERR-ZERO-LIQUIDITY))
+            (reserve-in (get reserve-x reserves))
+            (reserve-out (get reserve-y reserves))
+            (amount-out (get-swap-output amount-in reserve-in reserve-out))
+        )
+        
+        (asserts! (<= block-height deadline) ERR-EXPIRED)
+        (asserts! (>= amount-out min-amount-out) ERR-SLIPPAGE-EXCEEDED)
+        
+        ;; Update reserves
+        (map-set token-reserves
+            { token-x: token-in, token-y: token-out }
+            { reserve-x: (+ reserve-in amount-in),
+              reserve-y: (- reserve-out amount-out) })
+        
+        (ok amount-out))))
+
+;; Initialize contract
+(begin
+    (var-set total-liquidity u0))
