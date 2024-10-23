@@ -241,3 +241,25 @@
         fees-y: (/ (* total-fees-y provider-share) u10000)
     })))
 
+
+;; Get volume-based fee tier for a liquidity provider
+(define-read-only (get-fee-tier (provider principal))
+    (let (
+        (provider-liquidity (get-liquidity-provider-balance provider))
+    )
+    (ok (if (>= provider-liquidity u1000000000)
+            u2  ;; 0.2% fee for large LPs
+            (if (>= provider-liquidity u100000000)
+                u25  ;; 0.25% fee for medium LPs
+                u3))))) ;; 0.3% fee for small LPs
+
+;; Predict liquidity mining rewards
+(define-read-only (predict-mining-rewards
+    (provider principal)
+    (blocks uint))
+    (let (
+        (provider-share (unwrap! (get-pool-share provider) (err u0)))
+        (base-reward-per-block u100)  ;; Base reward tokens per block
+    )
+    (ok (/ (* (* blocks base-reward-per-block) provider-share) u10000))))
+
