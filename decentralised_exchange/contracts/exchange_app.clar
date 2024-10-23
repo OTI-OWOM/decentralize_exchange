@@ -196,5 +196,25 @@
           reserve-y: reserve-y, 
           total-liquidity: (var-get total-liquidity) })))
 
+;; Get user's share of the pool as a percentage
+(define-read-only (get-pool-share (provider principal))
+    (let (
+        (provider-liquidity (get-liquidity-provider-balance provider))
+        (total (var-get total-liquidity))
+    )
+    (if (is-eq total u0)
+        (ok u0)
+        (ok (/ (* provider-liquidity u10000) total)))))  ;; Multiplied by 10000 for 2 decimal precision
+
+;; Calculate impermanent loss for a given price change
+(define-read-only (calculate-impermanent-loss
+    (initial-price uint)
+    (current-price uint))
+    (let (
+        (price-ratio (/ (* current-price u1000000) initial-price))
+        (sqrt-ratio (sqrti price-ratio))
+    )
+    (ok (- (/ (* u2 sqrt-ratio) (+ u1000000 price-ratio)) u1000000))))
+
 
 
