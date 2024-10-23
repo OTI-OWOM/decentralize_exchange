@@ -1,4 +1,4 @@
-;; Implements basic AMM (Automated Market Maker) functionality
+
 
 (define-constant contract-owner tx-sender)
 (define-constant fee-denominator u1000)
@@ -216,5 +216,28 @@
     )
     (ok (- (/ (* u2 sqrt-ratio) (+ u1000000 price-ratio)) u1000000))))
 
+;; Calculate the minimum amount of liquidity tokens that should be minted
+(define-read-only (get-minimum-liquidity
+    (amount-x uint)
+    (amount-y uint))
+    (let (
+        (geometric-mean (sqrti (* amount-x amount-y))))
+    (ok (/ geometric-mean u100))))  ;; 1% of geometric mean
 
+
+;; Calculate accumulated fees for a liquidity provider
+(define-read-only (get-accumulated-fees
+    (provider principal)
+    (token-x (string-ascii 32))
+    (token-y (string-ascii 32)))
+    (let (
+        (provider-share (unwrap! (get-pool-share provider) (err u0)))
+        (reserves (unwrap! (get-reserves token-x token-y) (err u0)))
+        (total-fees-x (/ (* (get reserve-x reserves) fee-numerator) fee-denominator))
+        (total-fees-y (/ (* (get reserve-y reserves) fee-numerator) fee-denominator))
+    )
+    (ok {
+        fees-x: (/ (* total-fees-x provider-share) u10000),
+        fees-y: (/ (* total-fees-y provider-share) u10000)
+    })))
 
