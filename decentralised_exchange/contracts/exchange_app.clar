@@ -167,3 +167,34 @@
     (if (is-eq reserve-x u0)
         (ok amount-x)
         (ok (/ (* amount-x reserve-y) reserve-x)))))
+
+
+;; Calculate the current price of token-y in terms of token-x
+(define-read-only (get-price-y-in-x
+    (token-x (string-ascii 32))
+    (token-y (string-ascii 32)))
+    (let (
+        (reserves (unwrap! (get-reserves token-x token-y) (err u0)))
+        (reserve-x (get reserve-x reserves))
+        (reserve-y (get reserve-y reserves))
+    )
+    (if (or (is-eq reserve-x u0) (is-eq reserve-y u0))
+        (err u0)  ;; Using u0 as error code for zero liquidity
+        (ok (/ (* reserve-x u1000000) reserve-y)))))  ;; Price multiplied by 1M for precision
+
+
+;; Get total pool value locked in terms of token-x
+(define-read-only (get-total-value-locked
+    (token-x (string-ascii 32))
+    (token-y (string-ascii 32)))
+    (let (
+        (reserves (unwrap! (get-reserves token-x token-y) (err u0)))
+        (reserve-x (get reserve-x reserves))
+        (reserve-y (get reserve-y reserves))
+    )
+    (ok { reserve-x: reserve-x, 
+          reserve-y: reserve-y, 
+          total-liquidity: (var-get total-liquidity) })))
+
+
+
